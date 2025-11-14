@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,11 +23,24 @@ interface TeamResult {
   has_blitz: boolean;
 }
 
+interface RoundData {
+  id: number;
+  round_number: number;
+  team_id: number;
+  is_correct: boolean;
+  time_seconds: number;
+  has_blitz: boolean;
+  points: number;
+}
+
 const Index = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [currentRound, setCurrentRound] = useState(1);
   const [teamResults, setTeamResults] = useState<TeamResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [savedRounds, setSavedRounds] = useState<RoundData[]>([]);
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [newTeamName, setNewTeamName] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -34,21 +48,32 @@ const Index = () => {
   }, []);
 
   useEffect(() => {
+    const existingRound = savedRounds.filter(r => r.round_number === currentRound);
+    
     setTeamResults(
-      teams.map(team => ({
-        team_id: team.id,
-        is_correct: false,
-        time_seconds: 0,
-        has_blitz: false
-      }))
+      teams.map(team => {
+        const saved = existingRound.find(r => r.team_id === team.id);
+        return saved ? {
+          team_id: team.id,
+          is_correct: saved.is_correct,
+          time_seconds: saved.time_seconds,
+          has_blitz: saved.has_blitz
+        } : {
+          team_id: team.id,
+          is_correct: false,
+          time_seconds: 0,
+          has_blitz: false
+        };
+      })
     );
-  }, [teams, currentRound]);
+  }, [teams, currentRound, savedRounds]);
 
   const fetchTeams = async () => {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
       setTeams(data.teams);
+      setSavedRounds(data.rounds || []);
     } catch (error) {
       toast({
         title: "Ошибка загрузки",
@@ -105,6 +130,39 @@ const Index = () => {
     return 3;
   };
 
+  const updateTeamName = async () => {
+    if (!editingTeam || !newTeamName.trim()) return;
+    
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          team_name_update: {
+            team_id: editingTeam.id,
+            name: newTeamName.trim()
+          }
+        })
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Успех!",
+          description: "Название команды обновлено",
+        });
+        fetchTeams();
+        setEditingTeam(null);
+        setNewTeamName('');
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить название",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -149,7 +207,41 @@ const Index = () => {
                       }`}>
                         {index + 1}
                       </div>
-                      <span className="font-semibold text-lg">{team.name}</span>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <button 
+                            onClick={() => {
+                              setEditingTeam(team);
+                              setNewTeamName(team.name);
+                            }}
+                            className="font-semibold text-lg hover:text-primary transition-colors"
+                          >
+                            {team.name}
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="bg-card">
+                          <DialogHeader>
+                            <DialogTitle className="text-primary">Изменить название команды</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4 mt-4">
+                            <div>
+                              <Label>Новое название</Label>
+                              <Input
+                                value={newTeamName}
+                                onChange={(e) => setNewTeamName(e.target.value)}
+                                placeholder="Введите название команды"
+                                className="bg-background"
+                              />
+                            </div>
+                            <Button 
+                              onClick={updateTeamName}
+                              className="w-full bg-primary hover:bg-primary/90"
+                            >
+                              Сохранить
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     <div className="flex items-center gap-2">
                       <Icon name="Coins" size={20} className="text-primary" />

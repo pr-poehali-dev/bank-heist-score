@@ -84,6 +84,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             body_data = json.loads(event.get('body', '{}'))
             round_number = body_data.get('round_number')
             team_results = body_data.get('team_results', [])
+            team_name_update = body_data.get('team_name_update')
+            
+            if team_name_update:
+                team_id = team_name_update.get('team_id')
+                new_name = team_name_update.get('name')
+                cursor.execute('UPDATE teams SET name = %s WHERE id = %s', (new_name, team_id))
+                conn.commit()
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({'success': True, 'message': 'Название обновлено'})
+                }
             
             round_coefficient = 1
             if round_number in [3, 4]:
