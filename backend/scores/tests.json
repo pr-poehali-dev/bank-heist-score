@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "Get initial team scores",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "teams": "array",
+        "rounds": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Submit round results",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "round_number": 1,
+        "team_results": [
+          {"team_id": 1, "is_correct": true, "time_seconds": 45, "has_blitz": false},
+          {"team_id": 2, "is_correct": true, "time_seconds": 60, "has_blitz": false},
+          {"team_id": 3, "is_correct": false, "time_seconds": 90, "has_blitz": false},
+          {"team_id": 4, "is_correct": true, "time_seconds": 30, "has_blitz": false}
+        ]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "success": true
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
