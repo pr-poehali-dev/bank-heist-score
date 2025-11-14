@@ -112,7 +112,7 @@ const Index = () => {
           <div className="flex items-center justify-center gap-4 mb-4">
             <Icon name="CircleDollarSign" size={48} className="text-primary animate-pulse-gold" />
             <h1 className="text-5xl md:text-7xl font-bold text-primary drop-shadow-lg">
-              ОГРАБЛЕНИЕ БАНКА
+              ОГРАБЛЕНИЕ БАНКА ГИПОТЕЗ
             </h1>
             <Icon name="Vault" size={48} className="text-primary animate-pulse-gold" />
           </div>
@@ -185,7 +185,7 @@ const Index = () => {
             </div>
 
             <div className="space-y-4 mb-6">
-              {teams.map(team => {
+              {teams.sort((a, b) => a.id - b.id).map(team => {
                 const result = teamResults.find(r => r.team_id === team.id);
                 if (!result) return null;
 
